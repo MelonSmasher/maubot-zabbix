@@ -1,0 +1,13 @@
+maubot: 0.4.0
+id: com.melonsmasher.zabbix
+version: 0.1.16
+license: MIT
+modules:
+  - zabbix
+main_class: ZabbixPlugin
+database: true
+database_type: asyncpg
+config: true
+webapp: true
+extra_files:
+  - base-config.yaml

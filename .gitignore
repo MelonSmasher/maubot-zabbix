@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*.mbp
+venv/
+.venv/
+.idea/
+.vscode/
