@@ -105,6 +105,10 @@ severity_icons:
 # Set to 0 to disable truncation.
 max_opdata_length: 200
 
+# Automatically delete alert messages (and their threads) from Matrix rooms
+# after this many days. Set to 0 to disable message cleanup.
+message_retention_days: 0
+
 # Enable debug logging of incoming webhook payloads.
 # When true, every POST body received is logged.
 debug: false

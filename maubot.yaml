@@ -1,6 +1,6 @@
 maubot: 0.4.0
 id: com.melonsmasher.zabbix
-version: 0.1.16
+version: 0.1.17
 license: MIT
 modules:
   - zabbix

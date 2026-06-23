@@ -139,6 +139,7 @@ class Config(BaseProxyConfig):
         helper.copy("allowed_users")
         helper.copy("severity_icons")
         helper.copy("max_opdata_length")
+        helper.copy("message_retention_days")
         helper.copy("debug")
 
 
@@ -166,19 +167,57 @@ class ZabbixPlugin(Plugin):
         await super().stop()
 
     async def _periodic_cleanup(self) -> None:
-        """Delete alert rows older than 7 days (orphaned / never resolved)."""
+        """Periodically clean up old alerts from the DB and optionally redact
+        old alert messages (and their threads) from Matrix rooms."""
         while True:
             await asyncio.sleep(3600)  # Run every hour
             try:
-                cutoff = datetime.utcnow() - timedelta(days=7)
-                await self.database.execute(
-                    "DELETE FROM alerts WHERE received_at < $1",
-                    cutoff,
-                )
+                retention_days = self.config.get("message_retention_days", 0)
+                # If message retention is configured, redact old messages first.
+                if retention_days and retention_days > 0:
+                    cutoff = datetime.utcnow() - timedelta(days=retention_days)
+                    rows = await self.database.fetch(
+                        "SELECT matrix_event_id, room_id FROM alerts WHERE received_at < $1",
+                        cutoff,
+                    )
+                    for row in rows:
+                        await self._redact_thread(
+                            RoomID(row["room_id"]), EventID(row["matrix_event_id"]),
+                        )
+                    if rows:
+                        await self.database.execute(
+                            "DELETE FROM alerts WHERE received_at < $1",
+                            cutoff,
+                        )
+                else:
+                    # Even without message retention, clean orphaned DB rows after 7 days.
+                    cutoff = datetime.utcnow() - timedelta(days=7)
+                    await self.database.execute(
+                        "DELETE FROM alerts WHERE received_at < $1",
+                        cutoff,
+                    )
             except asyncio.CancelledError:
                 return
             except Exception as e:
                 self.log.debug("Periodic cleanup failed: %s", e)
+
+    async def _redact_thread(self, room_id: RoomID, event_id: EventID) -> None:
+        """Redact an alert message and all messages in its thread."""
+        try:
+            # Redact thread replies first.
+            relations = await self.client.api.request(
+                Method.GET,
+                Path.v1.rooms[room_id].relations[event_id]["m.thread"],
+            )
+            for evt in relations.get("chunk", []):
+                try:
+                    await self.client.redact(room_id, EventID(evt["event_id"]))
+                except Exception:
+                    pass
+            # Redact the alert message itself.
+            await self.client.redact(room_id, event_id)
+        except Exception as e:
+            self.log.debug("Failed to redact thread for %s: %s", event_id, e)
 
     # --- Helpers -------------------------------------------------------------
 
