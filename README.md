@@ -97,7 +97,7 @@ severity_icons:
   information: "ℹ️"
   warning: "⚠️"
   average: "🔶"
-  high: "�"
+  high: "🚨"
   disaster: "🔥"
 
 # Maximum length (in characters) for the operational data field.
