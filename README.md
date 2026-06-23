@@ -79,23 +79,35 @@ Plain replies outside of a thread are ignored.
 ## Configuration Reference
 
 ```yaml
-# Zabbix frontend URL
-zabbix_url: "https://zabbix.example.com"
+# Zabbix server URL (e.g. https://zabbix.example.com).
+# Required for acknowledging alerts via reactions.
+zabbix_url: ""
 
-# API token (Administration → API tokens)
-zabbix_api_token: "your-token-here"
+# Zabbix API token (created in Zabbix → Administration → API tokens).
+# Needs permissions: Read/Write to Problems (for acknowledge/close).
+zabbix_api_token: ""
 
-# Optional: restrict bot command access
+# Optional ACL: list of Matrix user IDs allowed to manage webhooks.
+# Empty list = anyone in a room with the bot can use admin commands.
 allowed_users: []
 
-# Severity emoji mapping
+# Severity → emoji mapping shown in alert cards.
 severity_icons:
   not_classified: "❔"
   information: "ℹ️"
   warning: "⚠️"
   average: "🔶"
-  high: "🔴"
+  high: "�"
   disaster: "🔥"
+
+# Maximum length (in characters) for the operational data field.
+# If the value exceeds this limit it will be truncated with "…".
+# Set to 0 to disable truncation.
+max_opdata_length: 200
+
+# Enable debug logging of incoming webhook payloads.
+# When true, every POST body received is logged.
+debug: false
 ```
 
 ## License
